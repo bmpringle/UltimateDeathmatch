@@ -1,0 +1,108 @@
+<document>
+	<head>
+		<script
+			src="https://code.jquery.com/jquery-3.7.1.min.js"
+			integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+			crossorigin="anonymous"
+		></script>
+		<script>
+			function update_join_game_dropdown_form() {
+				if (
+					$("#game option:selected").attr("needs_password") != "True"
+				) {
+					$("#join-game-password").attr("disabled", "disabled");
+				} else {
+					$("#join-game-password").removeAttr("disabled");
+				}
+			}
+
+			$(function () {
+				var csrf_token = $(`{% csrf_token %}`).val();
+
+				$("#start-server-btn").on("click", function () {
+					$("#game-form").html(
+						"<label>Server Name: </label><input type='text' id='server_name'></input><br><label>Password: </label><input type='text' id='server_password'></input><br><button id='start-server-confirm-btn'>Start Server</button>",
+					);
+					$("#start-server-confirm-btn").on("click", function () {
+						$.post({
+							url: "{% url 'games-list' %}",
+							headers: {
+								"X-CSRFTOKEN": csrf_token,
+							},
+							data: {
+								name: $("#server_name").val(),
+								password: $("#server_password").val(),
+							},
+						}).then(function () {
+							location.reload();
+						});
+					});
+				});
+				$("#join-server-btn").on("click", function () {
+					$("#game-form").html(`
+						<form method="post" action="{% url 'join-game' %}">
+						{% csrf_token %}
+							<select name="game_id" id="game">
+								{% for game in games %}
+								<option value="{{game.id}}" needs_password="{{game.has_password}}">{{game.name}}</option>
+								{% endfor %}
+							</select>
+							<br />
+							<label>Password: </label><input type="text" name="password" id="join-game-password"></input>
+							<br />
+							<button id="join-server-confirm-btn">Join Server</button>
+						</form>
+					`);
+					update_join_game_dropdown_form();
+					$("#game").on("change", update_join_game_dropdown_form);
+				});
+				$("#logout-btn").on("click", function () {
+					$.get("{% url 'logout' %}").then(function () {
+						location.reload();
+					});
+				});
+				$("#signup-state-btn").on("click", function () {
+					$("#auth-form").html(
+						"<label>First Name: </label><input type='text' id='first_name'></input><br><label>Last Name: </label><input type='text' id='last_name'></input><br><label>Email: </label><input type='text' id='email'></input><br><label>Username: </label><input type='text' id='username'></input><br><label>Password: </label><input type='text' id='password'></input><br><button id='signup-btn'>Sign Up</button>",
+					);
+					$("#signup-btn").on("click", function () {
+						$.post("{% url 'createuser' %}", {
+							username: $("#username").val(),
+							password: $("#password").val(),
+							first_name: $("#first_name").val(),
+							last_name: $("#last_name").val(),
+							email: $("#email").val(),
+						});
+						$("#username").val("");
+						$("#password").val("");
+						$("#first_name").val("");
+						$("#last_name").val("");
+						$("#email").val("");
+					});
+				});
+				$("#login-state-btn").on("click", function () {
+					$("#auth-form").html(
+						`<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Login</button></form>`,
+					);
+					$("#login-btn").on("click", function () {
+						// Make login api call
+					});
+				});
+			});
+		</script>
+	</head>
+	<body style="background-color: wheat">
+		{% if user.is_authenticated %}
+		<button id="start-server-btn">Start Server</button>
+		<button id="join-server-btn">Join Server</button>
+		<button id="logout-btn">Log Out</button>
+		<br />
+		<div id="game-form"></div>
+		{% else %}
+		<button id="login-state-btn">Log In</button>
+		<button id="signup-state-btn">Sign Up</button>
+		<br />
+		<div id="auth-form"></div>
+		{% endif %}
+	</body>
+</document>
