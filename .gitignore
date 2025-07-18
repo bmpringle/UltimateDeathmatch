@@ -1,0 +1,4 @@
+*.js
+*.wasm
+*/__pycache__/**
+.cache/**
