@@ -40,6 +40,9 @@
 
 				Module({
 					canvas: $("#game_canvas"),
+					print: function (text) {
+						console.log("Emscripten: ", text);
+					},
 				}).then((module) => {
 					game_module = module;
 				});
