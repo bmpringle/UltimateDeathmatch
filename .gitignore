@@ -1,5 +1,6 @@
 *.js
 *.wasm
+*.data
 **__pycache__**
 .cache/**
 emsdk/**

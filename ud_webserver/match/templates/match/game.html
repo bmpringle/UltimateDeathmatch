@@ -6,9 +6,18 @@
 			integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
 			crossorigin="anonymous"
 		></script>
-		<script src="{% static 'match/game_files/a.out.js' %}"></script>
+		<script src="{% static 'match/game_files/game_client.js' %}"></script>
 		<script>
 			var game_module = null;
+
+			function set_camera_pos(x, y, z) {
+				game_module.ccall(
+					"set_camera_pos",
+					null,
+					["number", "number", "number"],
+					[x, y, z],
+				);
+			}
 
 			function resize_js_callback(entries) {
 				for (const resize_entry of entries) {
@@ -33,21 +42,66 @@
 				}
 			}
 			$(function () {
-				new ResizeObserver(resize_js_callback).observe(
-					document.getElementById("game_canvas"),
-					{ box: "device-pixel-content-box" },
-				);
-
+				$("#game_canvas").on("click", function () {
+					$("#game_canvas")[0].requestPointerLock();
+				});
+				try {
+					new ResizeObserver(resize_js_callback).observe(
+						document.getElementById("game_canvas"),
+						{ box: "device-pixel-content-box" },
+					);
+				} catch (error) {
+					let canvas = document.getElementById("game_canvas");
+					let lastWidth = canvas.clientWidth;
+					let lastHeight = canvas.clientHeight;
+					window.addEventListener("resize", () => {
+						const newWidth = canvas.clientWidth;
+						const newHeight = canvas.clientHeight;
+						if (
+							newWidth !== lastWidth ||
+							newHeight !== lastHeight
+						) {
+							lastWidth = newWidth;
+							lastHeight = newHeight;
+							console.log(lastWidth, lastHeight);
+							game_module.ccall(
+								"resize_gl_viewport",
+								null,
+								["number", "number"],
+								[lastWidth, lastHeight],
+							);
+						}
+					});
+				}
 				Module({
 					canvas: $("#game_canvas"),
 					print: function (text) {
 						console.log("Emscripten: ", text);
 					},
+					stderr: function (text) {
+						alert(text);
+					},
+					locateFile: function (file, prefix) {
+						if (file.endsWith(".data")) {
+							return (
+								"{% static 'match/game_files' %}" + "/" + file
+							);
+						}
+						return prefix + file;
+					},
 				}).then((module) => {
 					game_module = module;
+					game_module.noExitRuntime = true;
 				});
 			});
 		</script>
 	</head>
-	<canvas id="game_canvas" style="width: 100%; height: 100%"> </canvas>
+	<body>
+		<canvas
+			id="game_canvas"
+			style="width: 100%; height: 100%"
+			tabindex="-1"
+		>
+		</canvas>
+	</body>
 </document>
