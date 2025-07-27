@@ -2,3 +2,4 @@
 *.wasm
 */__pycache__/**
 .cache/**
+emsdk/**
